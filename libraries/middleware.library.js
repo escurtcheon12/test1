@@ -5,11 +5,11 @@ const { UnauthorizedException } = require("../helpers/errors");
 
 let library = {
   jwt_verify: (req, res, next) => {
-    jwt.verify(req.token, "user_id", (err, data) => {
+    jwt.verify(req.token, "id", (err, data) => {
       if (err) {
         const err = new UnauthorizedException();
         next(err);
-      } else req.user_id = data.user_id;
+      } else req.id = data.id;
     });
     next();
   },

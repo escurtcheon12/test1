@@ -1,4 +1,4 @@
-const { database } = require("../config");
+const { database: mysql } = require("../config");
 
 const jadwalModel = {
   create: (data) => {
@@ -16,7 +16,7 @@ const jadwalModel = {
       "INSERT INTO jadwal (dokter_id, day, time_start, time_finish, quota, status, date_start, date_end) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     return new Promise((resolve, reject) => {
-      database.query(
+      mysql.query(
         query,
         [
           dokter_id,
@@ -43,7 +43,7 @@ const jadwalModel = {
       "SELECT j.*, d.name FROM jadwal as j INNER JOIN dokter as d ON j.dokter_id = d.id";
 
     return new Promise((resolve, reject) => {
-      database.query(query, (err, rows, fields) => {
+      mysql.query(query, (err, rows, fields) => {
         if (err) {
           reject(err);
         } else {

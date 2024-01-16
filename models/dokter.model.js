@@ -1,4 +1,4 @@
-const { database } = require("../config");
+const { database: mysql } = require("../config");
 
 const dokterModel = {
   create: (data) => {
@@ -6,7 +6,7 @@ const dokterModel = {
     const query = "INSERT INTO dokter (name) VALUES (?)";
 
     return new Promise((resolve, reject) => {
-      database.query(query, [name], (err, rows, fields) => {
+      mysql.query(query, [name], (err, rows, fields) => {
         if (err) {
           reject(err);
         } else {
@@ -19,7 +19,7 @@ const dokterModel = {
     const query = "SELECT * FROM dokter WHERE id = ?";
 
     return new Promise((resolve, reject) => {
-      database.query(query, [id], (err, rows, fields) => {
+      mysql.query(query, [id], (err, rows, fields) => {
         if (err) {
           reject(err);
         } else {

@@ -27,14 +27,10 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-async function startServer() {
-  app.listen(config.server.port, (err) => {
-    if (err) {
-      process.exit(1);
-    }
+app.listen(config.server.port, (err) => {
+  if (err) {
+    process.exit(1);
+  }
 
-    console.log("Port opened at " + config.server.port);
-  });
-}
-
-startServer();
+  console.log("Port opened at " + config.server.port);
+});
