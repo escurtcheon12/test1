@@ -1,5 +1,5 @@
 const { BadRequestException } = require("../helpers/errors");
-const { jadwalModel, dokterModel } = require("../models");
+const { jadwalModel, dokterModel, detailJadwalModel } = require("../models");
 
 const jadwalController = {
   create: async (req, res) => {
@@ -16,13 +16,13 @@ const jadwalController = {
       } = req.body;
 
       const urutanHari = [
+        "minggu",
         "senin",
         "selasa",
         "rabu",
         "kamis",
         "jumat",
         "sabtu",
-        "minggu",
       ];
 
       if (
@@ -36,7 +36,7 @@ const jadwalController = {
         !date_end
       ) {
         throw new BadRequestException(
-          "Dokter id, hari, waktu awal, waktu akhir, kouta, status, date_start, dan date_end harus diisi semua"
+          "Dokter id, hari, waktu awal, waktu akhir, kouta, status, tanggal awal, dan tanggal akhir harus diisi semua"
         );
       }
 
@@ -45,6 +45,9 @@ const jadwalController = {
           "Hari harus salah satu dari: senin, selasa, rabu, kamis, jumat, sabtu, dan minggu"
         );
       }
+
+      if (time_start == time_finish)
+        throw new BadRequestException("Waktu awal dan waktu akhir jangan sama");
 
       if (status != 1 && status != 0) {
         throw new BadRequestException(
@@ -72,26 +75,81 @@ const jadwalController = {
       }
 
       const currentTime = Date.now();
-      if (startTime < currentTime || endTime < currentTime) {
+      const currentDate = new Date(currentTime);
+
+      const startDateTime = new Date(date_start);
+      const endDateTime = new Date(date_end);
+
+      currentDate.setHours(0, 0, 0, 0);
+      startDateTime.setHours(0, 0, 0, 0);
+      endDateTime.setHours(0, 0, 0, 0);
+
+      if (
+        startDateTime.getTime() < currentDate.getTime() ||
+        endDateTime.getTime() < currentDate.getTime()
+      ) {
         throw new BadRequestException(
-          "Tanggal awal dan tanggal akhir harus pada waktu yang akan datang"
+          "Tanggal awal dan tanggal akhir harus pada waktu yang akan datang dari tanggal saat ini"
         );
       }
 
-      const result = await jadwalModel.create({
+      const findDayIndex = urutanHari.indexOf(day.toLowerCase());
+      let dataDayInRange = [];
+      for (
+        let startDate = new Date(startDateTime);
+        startDate <= endDateTime;
+        startDate.setDate(startDate.getDate() + 1)
+      ) {
+        if (startDate.getDay() == findDayIndex) {
+          dataDayInRange.push(new Date(startDate));
+        }
+      }
+
+      if (dataDayInRange.length == 0)
+        throw new BadRequestException(
+          "Tidak ada hari " +
+            day +
+            " dari range " +
+            date_start +
+            " sampai " +
+            date_end
+        );
+
+      const getByNameAndDate = await dokterModel.getByIdAndDate(
+        dokterId,
+        dataDayInRange
+      );
+
+      if (getByNameAndDate.length > 0)
+        throw new BadRequestException(
+          "Jadwal dokter setiap hari " +
+            day +
+            " dari tanggal " +
+            date_start +
+            " sampai tanggal " +
+            date_end +
+            " sudah terisi"
+        );
+
+      const createJadwal = await jadwalModel.create({
         dokter_id,
         day,
         time_start,
         time_finish,
-        quota,
-        status,
-        date_start,
-        date_end,
       });
+
+      for (const itemDate of dataDayInRange) {
+        await detailJadwalModel.create({
+          jadwal_id: createJadwal.insertId,
+          quota,
+          status,
+          created_at: itemDate,
+        });
+      }
 
       return res.json({
         status: "berhasil",
-        data: result,
+        data: createJadwal,
       });
     } catch (err) {
       return res.status(err.status || 500).json({
